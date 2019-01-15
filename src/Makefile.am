@@ -22,7 +22,7 @@ DEKTEC_CXXFLAGS = -g -O2 -I$(INCLUDEDIR) -fexceptions \
 DEKTEC_LIBCLASSES = ../DTAPI/DTAPI64.o
 		
 # sources used to compile this plug-in
-libgstdektec_la_SOURCES =  gstdta2152src.cpp gstdta2152sink.cpp gstdta2160src.cpp gstdta2160sink.cpp
+libgstdektec_la_SOURCES =  gstdta2152src.cpp
 
 # compiler and linker flags used to compile this plugin, set in configure.ac
 libgstdektec_la_CXXFLAGS = $(GST_CFLAGS) $(DEKTEC_INCLUDES) $(DEKTEC_CXXFLAGS)
@@ -33,4 +33,4 @@ libgstdektec_la_LIBTOOLFLAGS = --tag=disable-static
 libgstdektec_la_CXXFLAGS += -g
 
 # headers we need but don't want installed
-noinst_HEADERS = gstdta2152src.h gstdta2152sink.h gstdta2160src.h gstdta2160sink.h
+noinst_HEADERS = gstdta2152src.h
