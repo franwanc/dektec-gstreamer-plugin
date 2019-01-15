@@ -354,7 +354,7 @@ gst_dta2152_src_class_init (GstDta2152SrcClass * klass)
     "DTA2152 source",
     "Source/Video",
     "DTA2152 Video Source Element",
-    "Frank Wang <<frankw0408@gmail.com>>");
+    "Frank Wang <<franwanc@gmail.com>>");
      
   gst_element_class_add_pad_template (gstelement_class,
       gst_pad_template_new ("videosrc", GST_PAD_SRC, GST_PAD_ALWAYS,
