@@ -1,34 +1,102 @@
-WHAT IT IS
-----------
+Introduction
+============
 
-gst-plugin is a template for writing your own GStreamer plug-in.
+This file describes the Dektec DTA-2152 card GStreamer SDI source plugin
+demonstration instructions. This GStreamer SDI source element reads raw
+SDI data from DTA-2152 SDI input ports (thorough Dektec DTAPI), and feeds
+raw video frame-by-frame to its video source pad, so that to be connected
+to other GStreamer transform/filter/sink elements.
 
-The code is deliberately kept simple so that you quickly understand the basics
-of how to set up autotools and your source tree.
+setup
+=====
 
-This template demonstrates :
-- what to do in autogen.sh
-- how to setup configure.ac (your package name and version, GStreamer flags)
-- how to setup your source dir 
-- what to put in Makefile.am
+The plugin has been tested on Ubuntu 12.04 Linux platform. The procedure 
+to setup the environment as follows.
 
-More features and templates might get added later on.
+to setup pc:
+- test PC w/ intel Xeon CPU + 4GB Ram (or equivalent)
+- PCIe slot hosting DTA-2152 Card
+- install Ubuntu 12.04 64-bit desktop version
+  - img downloadable from http://releases.ubuntu.com/12.04.5/
 
-HOW TO USE IT
--------------
+to setup DTA-2152:  
+- download the LinuxSDK Oct 2014 version from dektec website
+- unzip LinuxSDK to a folder and,
+- goto LinuxSDK\Drivers\Dta\Source\Linux, run 'make' then 'sudo make install'
+  to install the Dektec linux driver
+- check the installed DTA device w/ 'lsmod' command
+- download DtRecord and DtPlay utilities from Dektec website
+- compile and test run DtRecord and DtPlay for SDI card sanity check
 
-To use it, either make a copy for yourself and rename the parts or use the
-make_element script in tools. To create sources for "myfilter" based on the
-"gsttransform" template run:
+to setup GStreamer 1.0:
+- run following commands to install GStreamer 1.0 components needed after
+  a fresh Ubuntu 12.04 install:
+  - sudo apt-get install ubuntu-restricted-extras
+  - sudo add-apt-repository ppa:gstreamer-developers/ppa
+  - sudo apt-get update
+  - sudo apt-get install gstreamer1.0*
+- once above all done, run following command to sanity check the GST:
+  - gst-launch-1.0 videotestsrc ! xvimagesink
+    - you should be able to see the video test pattern running in one of
+      your Linux PC desktop window
 
-cd src;
-../tools/make_element myfilter gsttransform
+to compile the dektec plugin:
+- get 'dt-plugin' tar ball and unzip it to a folder
+- cd 'dt-plugin'
+- run './autogen.sh', 'make clean' then 'make' 
+- above will compile the 'dt-plugin' libtool project and generate the 
+  shared object 'libgstdektec.so' under 'dt-plugin/src/.libs/' as the actual
+  GStreamer plugin that we intend to create
+- note, this libtool project includes the Dektec DTAPI header and binary
+  to compile/link with under 'dt-plugin/DTAPI' folder  
 
-This will create gstmyfilter.c and gstmyfilter.h. Open them in an editor and
-start editing. There are several occurances of the string "template", update
-those with real values. The plugin will be called 'myfilter' and it will have
-one element called 'myfilter' too. Also look for "FIXME:" markers that point you
-to places where you need to edit the code.
+to inspect dektec plugin:
+- create '/usr/local/lib/gstreamer-1.0' as system gst lib folder
+- run 'export GST_PLUGIN_PATH=/usr/local/lib/gstreamer-1.0' in current shell
+- copy the GST plugin (.so file that you just generated) to GST lib folder
+  by cmd 'sudo cp src/.libs/libgstdektec.so /usr/local/lib/gstreamer-1.0/'
+- run 'gst-inspect-1.0 dta2152src' to inspect the new plugin
+  - it should show list of info including element pads/params
+  - SDI format & port number (1/2) will be plugin parameters as following:
+  mode                : Video mode to use for capture
+                        flags: readable, writable
+                        Enum "GstDta2152Modes" Default: 0, "NTSC SD 60i"
+                           (0): NTSC SD 60i      - ntsc
+                           (1): PAL SD 50i       - pal
+                           (2): HD1080 59.94i    - 1080i5994
+                           (3): HD1080 50i       - 1080i50
+                           (4): HD720 59.94p     - 720p5994
+                           (5): HD720 50p        - 720p50
+  connection          : Video input connection to use
+                        flags: readable, writable
+                        Enum "GstDta2152Connection" Default: 0, "SDI"
+                           (0): SDI              - sdi
+  port-number         : Capture port instance to use
+                        flags: readable, writable
+                        Integer. Range: 1 - 2 Default: 1 
 
-You still need to adjust the Makefile.am.
-
+to run dta-2152 SDI input viewing demo:
+- provide a SDI input feed to one of the DTA-2152 two SDI ports
+- launch gst pipeline with following cmd (PAL input from port 1 for example)
+  'gst-launch-1.0 -v dta2152src mode=1 port-number=1 ! xvimagesink sync=false'
+- you should be able to view the input SDI full-frame video running in a 
+  desktop window (full-frame includes VANC and HANC regions and also for 
+  interlaced format, it will show both fields separately one on the top 
+  half and the other on the bottom half - this was just for demonstration 
+  purposes)
+- 'ctrl-c' to terminate 
+- by changing input and corresponding 'mode' parameter, element will work 
+  with format from one of PAL/NTSC/1080i29.97/1080i25/720p59.94/720p50 
+- by changing inputs and correponding 'port-number' parameter, element will
+  read data from either one of the two SDI ports
+  
+to run dta-2152 SDI data w/ x264 realtime encoding (save to ts file):
+- provide SDI input feed
+- launch gst pipeline with cmd (720p59.94 inputting to port 1 for example)
+  - gst-launch-1.0 -v dta2152src mode=4 connection=0 port-number=1 ! \
+    videoconvert ! queue leaky=1 ! x264enc ! mpegtsmux ! filesink location=720p59.ts    
+- 'ctrl-c' to terminate      
+- after running for a period and then terminating, you should be able to
+  find a '720p59.ts' file as encoded output
+- vlc or other viewers should be able to play this ts video file 
+- encoding also tested with other SDI formats listed above
